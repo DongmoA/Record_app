@@ -53,6 +53,7 @@ Die Anwendung ermöglicht es Studierenden, ihre erbrachten Leistungen strukturie
 
 Die App folgt dem **Folder-by-Layer-Prinzip**:
 
+```text
 lib/
 ├── main.dart
 ├── data/
