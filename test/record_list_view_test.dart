@@ -33,6 +33,11 @@ Widget createTestApp(List<Record> records) {
     home: Scaffold(
       body: RecordListView(
         records: records,
+        iscabMode: false,
+        selectedRecords: [],
+        toggleRecordSelection: (Record record) {},
+        activateCabMode: (Record record) {},
+        
       ),
     ),
   );

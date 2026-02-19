@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/record.dart';
+import 'record_detail_page.dart';
+import '../data/record_repo.dart';
+import 'package:provider/provider.dart';
 import '../models/statistic.dart';
-import '../data/record_test_data.dart';
+import 'package:share_plus/share_plus.dart';
+import 'ModulePicker_Page.dart';
 
 class RecordListPage extends StatefulWidget {
    const RecordListPage({super.key}) ;
@@ -15,17 +19,122 @@ class RecordListPage extends StatefulWidget {
 class _RecordListPageState extends State<RecordListPage> {
  
   final String title = 'My Records';
-  List<Record> records = []; // Initial empty list of records
 
- /* static const snackBar = SnackBar(
+  /*static const snackBar = SnackBar(
     content: Text('Not implemented yet 🥲'),
     duration: Durations.long1,
   );*/
+  
+  bool iscabMode = false ; 
+  List<Record> selectedRecords = [] ;
+
+  void  activateCabMode ( Record record) {
+    setState(() {
+      iscabMode = true ; 
+      selectedRecords.add(record) ;
+    });
+  }
+
+  void deactivateCabMode () {
+    setState(() {
+      iscabMode = false ; 
+      selectedRecords.clear() ;
+    });
+  }
+
+  void toggleRecordSelection ( Record record) {
+    setState(() {
+      if ( selectedRecords.contains(record) ) {
+        selectedRecords.remove(record) ;
+        if ( selectedRecords.isEmpty ) {
+          deactivateCabMode() ;
+        }
+      } else {
+        selectedRecords.add(record) ;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+
+    final recordRepo = Provider.of<RecordRepository>(context);
+    final records = recordRepo.records;
     return Scaffold(
-      appBar: AppBar(
+      appBar: iscabMode ?  
+      AppBar(
+        title: Text('${selectedRecords.length} selected'),
+        elevation: 1,
+        shadowColor: Theme.of(context).shadowColor,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Close selection',
+          onPressed: () {
+            deactivateCabMode() ;
+          },
+        ),
+       
+
+        actions:
+         <Widget>[
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Delete selected records',
+            onPressed: () async {
+            final confirmed =    await  showDialog <bool>(
+              context: context,
+              builder: (context) {
+              return AlertDialog(
+                title: const Text('Delete Records'),
+                content: Text('Are you sure you want to delete ${selectedRecords.length} selected records?'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Close the dialog
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(true); // Close the dialog
+                    },
+                    child: const Text('Delete'),
+                  ),
+                ],
+              );
+            });
+
+            if ( confirmed == true ) {
+             
+              recordRepo.deleteList(selectedRecords) ;
+               // ignore: use_build_context_synchronously
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${selectedRecords.length} records deleted')
+              )
+              ) ;
+              deactivateCabMode() ;
+            
+            }
+              }
+              
+            
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share selected records',
+            onPressed: () {
+              final recordDetails = selectedRecords.map((r) => 
+                'Module: ${r.moduleName}, CRP: ${r.crp}, Grade: ${r.grade}%'
+              ).join('\n');
+              final ShareParams params = ShareParams(
+                text: 'Here are my selected records:\n$recordDetails'
+              );
+              SharePlus.instance.share(params);
+            },
+          ),
+        ],
+      )
+      : AppBar(
         title: Text(title),
         elevation: 1,
         shadowColor: Theme.of(context).shadowColor,
@@ -33,27 +142,51 @@ class _RecordListPageState extends State<RecordListPage> {
           IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Open records statistic',
-            onPressed: () =>
-              //  ScaffoldMessenger.of(context).showSnackBar(snackBar),
-              showStatisticsDialog(context, records)
+            onPressed: () {
+              final statistic = Statistic(records);
+
+              showDialog(
+                context: context, 
+                builder: (context) => AlertDialog(
+                  title: const Text('Records Statistic'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Record count: ${statistic.recordCount}'),
+                      Text('50% records: ${statistic.hwCount}'),
+                      Text('Sum crp: ${statistic.sumCrp}'),
+                      Text('Crp to end: ${statistic.crpToEnd}'),
+                      Text('Average : ${statistic.averageGrade.toStringAsFixed(2)}%'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Close'),
+                    ),
+                  ],  
+                ),
+              );
+            },
+             
+              
           ),
         ],
       ),
-      body: RecordListView(records: records),
+      body: RecordListView(records: records , iscabMode: iscabMode, selectedRecords: selectedRecords, 
+      toggleRecordSelection: toggleRecordSelection,activateCabMode:  activateCabMode),
       floatingActionButton: FloatingActionButton(
-       // onPressed: () => ScaffoldMessenger.of(context).showSnackBar(snackBar),
-       onPressed: () async {
-       var result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) =>  AddRecordPage()),
-         );
-        if (result != null) {
-          setState(() {
-            records.add(result) ;
-          });
-        }
-       },
-        
+        onPressed: () async {
+        await Navigator.push(
+          context, 
+          MaterialPageRoute(
+            builder: (context) => ModulePickerPage(),
+          ),   
+        );
+        }, 
         tooltip: 'Add record',
         child: const Icon(Icons.add),
       ),
@@ -62,9 +195,14 @@ class _RecordListPageState extends State<RecordListPage> {
 }
 
 class RecordListView extends StatelessWidget {
-  const RecordListView({super.key, required this.records});
+  const RecordListView({super.key, required this.records, 
+   required this.iscabMode ,  required this.selectedRecords ,  required this.toggleRecordSelection, required this.activateCabMode}) ;
 
   final List<Record> records;
+  final bool iscabMode ;
+  final List<Record> selectedRecords ;
+  final void Function(Record record) toggleRecordSelection ;
+  final void  Function(Record record) activateCabMode ;
 
   @override
   Widget build(BuildContext context) {
@@ -83,444 +221,34 @@ class RecordListView extends StatelessWidget {
             ],
           );
   }
-   
- return ListView.separated(
-  itemBuilder: (context, index) {
-    final r = records[index];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              r.moduleName,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              r.moduleNumber,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              '${r.crp}',
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              '${r.grade}',
-              textAlign: TextAlign.end,
-            ),
-          ),
-        ],
-      ),
-    );
-  },
-  separatorBuilder: (_, __) => const Divider(),
-  itemCount: records.length,
-);
 
+   return ListView.separated(
+      itemBuilder: (context, index) {
+        final r = records[index];
+        final isSelected = selectedRecords.contains(r) ;
+        return ListTile(
+          contentPadding: const EdgeInsets.all(16.0),
+          title: Text(
+            '${r.moduleName} ${r.crp}Crp ${r.grade}%',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+          ),
+          tileColor: isSelected ? const Color.fromARGB(255, 34, 122, 167) : null ,
+          onLongPress: () => activateCabMode(r),
+          onTap: iscabMode ? () => toggleRecordSelection(r) 
+          :  () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecordDetailPage(record: r),
+              ),
+            );
+          },
+        );
+      },
+      separatorBuilder: (_, __) => const Divider(),
+      itemCount: records.length,
+    );
     
   }
 }
 
-
-
-class AddRecordPage extends StatefulWidget {
-  const AddRecordPage({super.key});
-
-  @override
-  State<AddRecordPage> createState() => _AddRecordPageState();
-}
-
-// Classe LabeledTextField modifiée
-class LabeledTextField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String text;
-  final TextInputType keyboardType;
-  
-  const LabeledTextField({
-    super.key,
-    required this.label,
-    required this.controller,
-    this.text = '',
-    this.keyboardType = TextInputType.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 140,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: SizedBox(
-            height: 45,
-            child: TextField(
-              controller: controller,
-              keyboardType: keyboardType,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: text,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Classe _AddRecordPageState modifiée
-class _AddRecordPageState extends State<AddRecordPage> {
-  var moduleNumberController = TextEditingController();
-  var moduleNameController = TextEditingController();
-  var idController = TextEditingController();
-  var crpController = TextEditingController();
-  var gradeController = TextEditingController();
-  bool halfWeighted = false;
-  bool summerTerm = false;
-  int year = DateTime.now().year;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Leistungen anlegen'),
-        elevation: 1,
-        shadowColor: Theme.of(context).shadowColor,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                children: [
-                  LabeledTextField(
-                    label: 'ID:',
-                    controller: idController,
-                    text: 'z.B. 1',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  LabeledTextField(
-                    label: 'Modulnummer:',
-                    controller: moduleNumberController,
-                    text: 'z.B. INF1234',
-                  ),
-                  const SizedBox(height: 16),
-                  LabeledTextField(
-                    label: 'Modulname:',
-                    controller: moduleNameController,
-                    text: 'z.B. Einführung in die Informatik',
-                  ),
-                  const SizedBox(height: 16),
-                  LabeledTextField(
-                    label: 'Credit Points:',
-                    controller: crpController,
-                    text: 'z.B. 6',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  LabeledTextField(
-                    label: 'Note:',
-                    controller: gradeController,
-                    text: 'z.B. 85',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 140,
-                        child: Text(
-                          'Halb gewichtet:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: SwitchListTile(
-                            title: null,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            value: halfWeighted,
-                            onChanged: (bool value) {
-                              setState(() {
-                                halfWeighted = value;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 140,
-                        child: Text(
-                          'Sommersemester:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: SwitchListTile(
-                            title: null,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            value: summerTerm,
-                            onChanged: (bool value) {
-                              setState(() {
-                                summerTerm = value;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 140,
-                        child: Text(
-                          'Jahr:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: SizedBox(
-                          height: 45,
-                          child: DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            initialValue: year,
-                            items: List.generate(10, (index) => 2020 + index)
-                                .map((year) => DropdownMenuItem(
-                                      value: year,
-                                      child: Text(year.toString()),
-                                    ))
-                                .toList(),
-                            onChanged: (int? newValue) {
-                              setState(() {
-                                year = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {
-                  Record newRecord = Record(
-                    id: int.parse(idController.text),
-                    moduleNumber: moduleNumberController.text,
-                    moduleName: moduleNameController.text,
-                    crp: int.parse(crpController.text),
-                    grade: int.parse(gradeController.text),
-                    halfWeighted: halfWeighted,
-                    summerTerm: summerTerm,
-                    year: year,
-                  );
-                  Navigator.pop(context, newRecord);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Leistung speichern',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// for static analysis 
-
-void showStatisticsDialog(BuildContext context, List<Record> records) {
-  final stats = Statistic(records);
-  
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Titre
-              const Text(
-                'Statistik',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Tableau des statistiques
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    _buildStatRow(
-                      'Anzahl erfasster Leistungen',
-                      '${stats.recordCount}',
-                      isFirst: true,
-                    ),
-                    _buildStatRow(
-                      'Anzahl 50% Leistungen',
-                      '${stats.hwCount}',
-                    ),
-                    _buildStatRow(
-                      'Summe CrP',
-                      '${stats.sumCrp}',
-                    ),
-                    _buildStatRow(
-                      'CrP bis zum Abschluss',
-                      '${stats.crpToEnd}',
-                    ),
-                    _buildStatRow(
-                      'Durchschnittsnote',
-                      '${stats.averageGrade}',
-                      isLast: true,
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Bouton de fermeture
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Schließen'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-Widget _buildStatRow(String label, String value, {bool isFirst = false, bool isLast = false}) {
-  return Container(
-    decoration: BoxDecoration(
-      border: Border(
-        bottom: isLast ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
-      ),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}

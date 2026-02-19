@@ -1,0 +1,62 @@
+[
+  {
+    "number": "CS1019",
+    "name": "Compilerbau",
+    "crp": 6
+  },
+  {
+    "number": "CS1022",
+    "name": "Betriebssysteme",
+    "crp": 6
+  },
+  {
+    "number": "CS1013",
+    "name": "Objektorientierte Programmierung",
+    "crp": 6
+  },
+  {
+    "number": "MN1007",
+    "name": "Diskrete Mathematik",
+    "crp": 6
+  },
+  {
+    "number": "CS1014",
+    "name": "Grundlagen der Informatik",
+    "crp": 6
+  },
+  {
+    "number": "MN1008",
+    "name": "Naturwissenschaftliche und technische Grundlagen",
+    "crp": 6
+  },
+  {
+    "number": "CS1015",
+    "name": "Rechnernetze und ihre Anwendung",
+    "crp": 6
+  },
+  {
+    "number": "CS1017",
+    "name": "Algorithmen und Datenstrukturen",
+    "crp": 6
+  },
+  {
+    "number": "BA1004",
+    "name": "DV-orientierte Betriebswirtschaftslehre",
+    "crp": 3
+  },
+  {
+    "number": "CS1024",
+    "name": "Internetbasierte Systeme",
+    "crp": 6
+  },
+  {
+    "number": "INF1005",
+    "name": "Praktische Informatik 1",
+    "crp": 6
+  },
+  {
+    "number": "INF1006",
+    "name": "Praktische Informatik 2",
+    "crp": 6
+  }
+]

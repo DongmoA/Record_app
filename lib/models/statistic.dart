@@ -9,16 +9,23 @@ class Statistic {
 
   Statistic(List<Record> records) {
     recordCount = records.length;
-    hwCount = records.where((record) => record.halfWeighted).length;
-    sumCrp = records.fold(0, (sum, record) => sum + record.crp);
+    hwCount = records.where((record) => record.halfWeighted == true).length;
+    sumCrp = records.fold(0, (sum, record) => sum + (record.crp ?? 0));
     crpToEnd = 180 - sumCrp;
     
     if (recordCount > 0) {
       // gewichteten Notendurchschnitt berechnen
-      double totalWeightedGrade = records.fold(0.0, (sum, record) => 
-        sum + (record.grade * (record.halfWeighted ?  record.crp /2 : record.crp)));
-      averageGrade = (totalWeightedGrade / records.fold(0.0, (sum , records)=> 
-        sum + (records.halfWeighted ? records.crp /2 : records.crp))).round().toDouble();
+      double totalWeightedGrade = records.fold(0.0, (sum, record) {
+       final grade = record.grade ?? 0;
+       final halfWeighted = record.halfWeighted ?? false;
+       final crp = record.crp ?? 0;
+       return sum + (grade * (halfWeighted ? crp / 2 : crp));  
+        });
+      averageGrade = (totalWeightedGrade / records.fold(0.0, (sum , records) {
+        final crp = records.crp ?? 0;
+        final halfWeighted = records.halfWeighted ?? false;
+        return  sum + (halfWeighted ? crp / 2 : crp);
+    })).round().toDouble();
       averageGrade.ceil(); 
     } else {
       averageGrade = 0.0;
