@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/record_list_page.dart';
 import 'data/record_repo.dart';
-import 'pages/ModulePicker_Page.dart'; 
+import 'pages/module_picker_page.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
