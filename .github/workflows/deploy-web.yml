@@ -1,5 +1,11 @@
 name: Deploy Web to GitHub Pages
 
+# add a description for the workflow
+permissions: 
+  contents: read # allows the workflow to read the repository contents
+  pages: write # allows the workflow to publish to GitHub Pages
+  id-token: write  # allows the workflow to create and use OpenID Connect tokens for authentication
+
 # when to run the workflow
 on:
   push:
