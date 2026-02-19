@@ -1,0 +1,49 @@
+name: Deploy Web to GitHub Pages
+
+# when to run the workflow
+on:
+  push:
+    branches:
+      - main  # every time we push to main, it deploys
+  pull_request:
+    branches:
+      - main  # Also triggered on pull requests to main
+
+# what the workflow will do
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest  # Specifies the OS for the job
+
+    steps:
+      # step 1: Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # step 2: Setup Flutter environment
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'  # Version of Flutter to use
+
+      # step 3: Get Flutter dependencies
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      # step 4: Analyze the code for potential issues
+      - name: Analyze code
+        run: flutter analyze
+
+      # step 5: Build the web version of the app
+      - name: Build web
+        run: flutter build web --release
+
+      # step 6: Deploy the built web app to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+
+      # step 7: Print a success message after deployment
+      - name: Success message
+        run: echo "✅ Deployment successful! Your app is live on GitHub Pages"
