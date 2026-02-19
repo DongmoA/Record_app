@@ -57,16 +57,17 @@ lib/
 ├── main.dart
 ├── data/
 ├── models/
-│ ├── record.dart
-│ ├── statistic.dart
-│ └── module.dart
+│   ├── record.dart
+│   ├── statistic.dart
+│   └── module.dart
 ├── repositories/
-│ ├── record_repository.dart
-│ └── module_repository.dart
+│   ├── record_repository.dart
+│   └── module_repository.dart
 └── pages/
-├── record_list_page.dart
-├── record_detail_page.dart
-└── module_picker_page.dart
+    ├── record_list_page.dart
+    ├── record_detail_page.dart
+    └── module_picker_page.dart
+
 
 
 State-Management:
