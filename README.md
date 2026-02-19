@@ -69,6 +69,9 @@ lib/
     ├── record_detail_page.dart
     └── module_picker_page.dart
 
+``` 
+
+
 
 
 State-Management:
