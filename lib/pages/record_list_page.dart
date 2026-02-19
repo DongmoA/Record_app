@@ -5,7 +5,7 @@ import '../data/record_repo.dart';
 import 'package:provider/provider.dart';
 import '../models/statistic.dart';
 import 'package:share_plus/share_plus.dart';
-import 'ModulePicker_Page.dart';
+import 'module_picker_page.dart';
 
 class RecordListPage extends StatefulWidget {
    const RecordListPage({super.key}) ;
@@ -245,7 +245,7 @@ class RecordListView extends StatelessWidget {
           },
         );
       },
-      separatorBuilder: (_, __) => const Divider(),
+      separatorBuilder: (_, _) => const Divider(),
       itemCount: records.length,
     );
     

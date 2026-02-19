@@ -47,6 +47,7 @@ class RecordDetailPage extends StatelessWidget {
                   ),
                 ) ?? false;
                 if ( confirmed == true && _record.id != null) {
+                  if(!context.mounted) return;
                   final recordRepo = Provider.of<RecordRepository>(context, listen: false);
                   recordRepo.delete(_record.id!);
                   // ignore: use_build_context_synchronously
