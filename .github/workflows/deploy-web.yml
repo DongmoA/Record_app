@@ -24,10 +24,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v3
+      - name: Setup Java (required for Flutter)
+        uses: actions/setup-java@v3
         with:
-          flutter-version: '3.41.1'
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Setup Flutter
+        uses: flutter-actions/setup-flutter@v2
+        with:
+          channel: stable
+          version: 3.41.1
 
       - name: Get Flutter dependencies
         run: flutter pub get
