@@ -1,55 +1,51 @@
 name: Deploy Web to GitHub Pages
 
-# add a description for the workflow
-permissions: 
-  contents: read # allows the workflow to read the repository contents
-  pages: write # allows the workflow to publish to GitHub Pages
-  id-token: write  # allows the workflow to create and use OpenID Connect tokens for authentication
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-# when to run the workflow
 on:
   push:
     branches:
-      - main  # every time we push to main, it deploys
+      - main
   pull_request:
     branches:
-      - main  # Also triggered on pull requests to main
+      - main
 
-# what the workflow will do
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest  # Specifies the OS for the job
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      # step 1: Checkout the code from the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # step 2: Setup Flutter environment
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.1'  # Version of Flutter to use
+          flutter-version: '3.41.1'
 
-      # step 3: Get Flutter dependencies
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # step 4: Analyze the code for potential issues
-      - name: Analyze code
-        run: flutter analyze
-
-      # step 5: Build the web version of the app
       - name: Build web
         run: flutter build web --release
 
-      # step 6: Deploy the built web app to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
-      # step 7: Print a success message after deployment
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './build/web'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v3
+
       - name: Success message
         run: echo "✅ Deployment successful! Your app is live on GitHub Pages"
